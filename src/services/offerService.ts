@@ -3,6 +3,8 @@ import { SellerOffer, CreateOfferPayload } from '@/types';
 import { postService } from '@/services/postService';
 import { notificationService } from '@/services/notificationService';
 
+import { chatService } from '@/services/chatService';
+
 class OfferService {
   public async createOffer(userId: string, payload: CreateOfferPayload): Promise<{ data: SellerOffer | null; error: string | null }> {
     try {
@@ -75,10 +77,18 @@ class OfferService {
 
   public async acceptOffer(offerId: string, postId: string): Promise<{ success: boolean; error?: string }> {
     try {
+      // Get seller id
       const { data: offerData } = await supabase
         .from('seller_offers')
         .select('user_id, price')
         .eq('id', offerId)
+        .single();
+
+      // Get buyer id
+      const { data: postData } = await supabase
+        .from('buyer_posts')
+        .select('user_id')
+        .eq('id', postId)
         .single();
 
       const { error: offerError } = await supabase
@@ -99,12 +109,21 @@ class OfferService {
         return { success: false, error: postError.message };
       }
 
+      // Automatically create a Chat Room between buyer & seller
+      if (postData?.user_id && offerData?.user_id) {
+        try {
+          await chatService.createOrGetRoom(postId, postData.user_id, offerData.user_id);
+        } catch (chatErr) {
+          console.error('Failed to auto-create chat room on offer accept:', chatErr);
+        }
+      }
+
       if (offerData?.user_id) {
         try {
           await notificationService.addNotification(
             offerData.user_id,
             '🎉 Teklifiniz Kabul Edildi!',
-            'Sunmuş olduğunuz teklif alıcı tarafından kabul edildi.',
+            'Sunmuş olduğunuz teklif alıcı tarafından kabul edildi. Sohbet sekmesinden iletişime geçebilirsiniz.',
             'post_approved',
             postId
           );

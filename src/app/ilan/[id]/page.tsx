@@ -29,6 +29,7 @@ import {
 
 import { postService } from '@/services/postService';
 import { offerService } from '@/services/offerService';
+import { chatService } from '@/services/chatService';
 
 export default function PostDetailPage({
   params,
@@ -98,6 +99,30 @@ export default function PostDetailPage({
     } catch (err: any) {
       console.error('Accept offer error:', err);
       alert('Hata: ' + (err.message || 'Teklif kabul edilemedi.'));
+    }
+  };
+
+  const [chatLoadingId, setChatLoadingId] = useState<string | null>(null);
+
+  const handleStartChat = async (sellerId: string) => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    if (!post) return;
+    setChatLoadingId(sellerId);
+    try {
+      const buyerId = post.user_id;
+      const { data, error } = await chatService.createOrGetRoom(post.id, buyerId, sellerId);
+      if (data) {
+        router.push(`/mesajlar?room_id=${data.id}`);
+      } else {
+        alert('Sohbet odası açılamadı: ' + error);
+      }
+    } catch (err: any) {
+      alert('Hata: ' + err.message);
+    } finally {
+      setChatLoadingId(null);
     }
   };
 
@@ -256,6 +281,8 @@ export default function PostDetailPage({
                         key={offer.id}
                         offer={offer}
                         isPostOwner={true}
+                        onStartChat={() => handleStartChat(offer.user_id)}
+                        chatLoading={chatLoadingId === offer.user_id}
                       />
                     ))}
                   </div>
@@ -316,6 +343,8 @@ export default function PostDetailPage({
                 <OfferCard
                   offer={userOffer}
                   isPostOwner={false}
+                  onStartChat={() => handleStartChat(userOffer.user_id)}
+                  chatLoading={chatLoadingId === userOffer.user_id}
                 />
               ) : (
                 <div className="bg-slate-50 border border-dashed border-slate-300 rounded-3xl p-8 text-center text-xs text-slate-500 space-y-3">

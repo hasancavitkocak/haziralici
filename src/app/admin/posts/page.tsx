@@ -5,6 +5,8 @@ import { BuyerPost, PostStatus, SellerOffer } from '@/types';
 import { postService } from '@/services/postService';
 import { offerService } from '@/services/offerService';
 import { notificationService } from '@/services/notificationService';
+import { useAuth } from '@/context/AuthContext';
+import { auditLogService } from '@/services/auditLogService';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -29,6 +31,7 @@ import {
 } from 'lucide-react';
 
 export default function AdminPostsPage() {
+  const { user } = useAuth();
   const [posts, setPosts] = useState<BuyerPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -81,6 +84,13 @@ export default function AdminPostsPage() {
       const { success, error } = await postService.updatePostStatus(post.id, 'active', '');
 
       if (success) {
+        // Log action
+        auditLogService.logAction(
+          'İlan Onaylandı',
+          `"${post.title}" (ID: ${post.id}) başlıklı alıcı ilanı yayına alındı.`,
+          user?.email || 'Admin'
+        );
+
         setPosts(posts.map((p) => (p.id === post.id ? { ...p, status: 'active', rejection_reason: null } : p)));
         setInspectingPost(null);
 
@@ -115,6 +125,13 @@ export default function AdminPostsPage() {
       const { success, error } = await postService.updatePostStatus(post.id, 'rejected', rejectionReason.trim());
 
       if (success) {
+        // Log action
+        auditLogService.logAction(
+          'İlan Reddedildi',
+          `"${post.title}" (ID: ${post.id}) başlıklı ilan reddedildi. Neden: ${rejectionReason.trim()}`,
+          user?.email || 'Admin'
+        );
+
         setPosts(
           posts.map((p) =>
             p.id === post.id ? { ...p, status: 'rejected', rejection_reason: rejectionReason.trim() } : p
@@ -149,10 +166,18 @@ export default function AdminPostsPage() {
       return;
     }
 
+    const post = posts.find((p) => p.id === postId);
     setUpdatingId(postId);
     try {
       const { success, error } = await postService.deletePost(postId);
       if (success) {
+        // Log action
+        auditLogService.logAction(
+          'İlan Silindi',
+          `"${post?.title || 'Bilinmeyen İlan'}" (ID: ${postId}) başlıklı ilan sistemden silindi.`,
+          user?.email || 'Admin'
+        );
+
         setPosts(posts.filter((p) => p.id !== postId));
         if (inspectingPost?.id === postId) {
           setInspectingPost(null);

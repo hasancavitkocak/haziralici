@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { profileService } from '@/services/profileService';
 import { Profile, UserRole } from '@/types';
+import { useAuth } from '@/context/AuthContext';
+import { auditLogService } from '@/services/auditLogService';
 import { formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import {
@@ -16,6 +18,7 @@ import {
 } from 'lucide-react';
 
 export default function AdminUsersPage() {
+  const { user } = useAuth();
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,11 +42,19 @@ export default function AdminUsersPage() {
 
   const handleToggleRole = async (userId: string, currentRole: UserRole = 'user') => {
     const newRole: UserRole = currentRole === 'admin' ? 'user' : 'admin';
+    const targetUser = users.find((u) => u.id === userId);
     setUpdatingId(userId);
     try {
       const { success, error } = await profileService.updateUserRole(userId, newRole);
 
       if (success) {
+        // Log action
+        auditLogService.logAction(
+          'Yetki Değişikliği',
+          `"${targetUser?.full_name || targetUser?.email}" kullanıcısının rolü "${newRole.toUpperCase()}" olarak değiştirildi.`,
+          user?.email || 'Admin'
+        );
+
         setUsers(
           users.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
         );
@@ -62,10 +73,18 @@ export default function AdminUsersPage() {
       return;
     }
 
+    const targetUser = users.find((u) => u.id === userId);
     setUpdatingId(userId);
     try {
       const { success, error } = await profileService.deleteUser(userId);
       if (success) {
+        // Log action
+        auditLogService.logAction(
+          'Kullanıcı Silindi',
+          `"${targetUser?.full_name || targetUser?.email}" (ID: ${userId}) isimli kullanıcı platformdan tamamen silindi.`,
+          user?.email || 'Admin'
+        );
+
         setUsers(users.filter((u) => u.id !== userId));
       } else {
         alert('Kullanıcı silinemedi: ' + error);

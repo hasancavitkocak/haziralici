@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   Settings,
   Layers,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
@@ -102,6 +103,11 @@ export default function AdminLayout({
       name: 'Kategori Yönetimi',
       href: '/admin/categories',
       icon: Layers,
+    },
+    {
+      name: 'Yönetici Günlüğü',
+      href: '/admin/logs',
+      icon: Activity,
     },
     {
       name: 'Sistem Ayarları',

@@ -116,7 +116,7 @@ class ProfileService {
         .from('seller_offers')
         .select(`
           *,
-          buyer_posts:post_id (id, title, location_city, min_budget, max_budget)
+          buyer_posts:post_id (id, title, user_id, location_city, min_budget, max_budget)
         `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });

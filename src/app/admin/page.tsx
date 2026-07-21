@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { adminService } from '@/services/adminService';
+import { categoryService } from '@/services/categoryService';
 import { BuyerPost, SellerOffer, AdminStats } from '@/types';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import {
@@ -23,20 +24,26 @@ export default function AdminDashboardPage() {
   });
   const [recentPosts, setRecentPosts] = useState<BuyerPost[]>([]);
   const [recentOffers, setRecentOffers] = useState<SellerOffer[]>([]);
+  const [categoryStats, setCategoryStats] = useState<{ category: string; count: number }[]>([]);
+  const [weeklyTrend, setWeeklyTrend] = useState<{ day: string; posts: number; offers: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [statsData, postsData, offersData] = await Promise.all([
+      const [statsData, postsData, offersData, catStatsData, trendData] = await Promise.all([
         adminService.getAdminStats(),
         adminService.getRecentPosts(5),
         adminService.getRecentOffers(5),
+        adminService.getCategoryStats(),
+        adminService.getWeeklyTrend(),
       ]);
 
       setStats(statsData);
       setRecentPosts(postsData);
       setRecentOffers(offersData);
+      setCategoryStats(catStatsData);
+      setWeeklyTrend(trendData);
     } catch (err) {
       console.error('Error fetching admin stats:', err);
     } finally {
@@ -125,6 +132,138 @@ export default function AdminDashboardPage() {
             </div>
           );
         })}
+      </div>
+
+      {/* Visual Analytics Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Trend Line Chart */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded bg-[#312E81]"></span>
+              İlan & Teklif Trendi (Son 7 Gün)
+            </h3>
+            <p className="text-[11px] text-slate-400 font-medium">Platformun son bir haftalık günlük ilan ve teklif dağılım grafiği.</p>
+          </div>
+
+          <div className="h-56 w-full relative pt-2">
+            {weeklyTrend.length > 0 ? (
+              <>
+                {/* SVG Line Chart */}
+                <svg viewBox="0 0 500 200" className="w-full h-full overflow-visible">
+                  {/* Grid Lines */}
+                  <line x1="0" y1="150" x2="500" y2="150" stroke="#f1f5f9" strokeWidth="1" />
+                  <line x1="0" y1="100" x2="500" y2="100" stroke="#f1f5f9" strokeWidth="1" />
+                  <line x1="0" y1="50" x2="500" y2="50" stroke="#f1f5f9" strokeWidth="1" />
+
+                  {/* Day Labels */}
+                  {weeklyTrend.map((d, i) => (
+                    <text key={i} x={30 + i * 72} y="180" fill="#94a3b8" fontSize="10" fontWeight="bold" textAnchor="middle">
+                      {d.day}
+                    </text>
+                  ))}
+
+                  {/* Dynamic Blue Line (Posts) */}
+                  {(() => {
+                    const trendMax = Math.max(...weeklyTrend.map((d) => Math.max(d.posts, d.offers)), 5);
+                    const postsPoints = weeklyTrend.map((d, i) => `${30 + i * 72},${150 - (d.posts / trendMax) * 110}`).join(' ');
+                    const offersPoints = weeklyTrend.map((d, i) => `${30 + i * 72},${150 - (d.offers / trendMax) * 110}`).join(' ');
+                    return (
+                      <>
+                        <path
+                          d={`M ${postsPoints}`}
+                          fill="none"
+                          stroke="#312E81"
+                          strokeWidth="3.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d={`M ${offersPoints}`}
+                          fill="none"
+                          stroke="#10b981"
+                          strokeWidth="3.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeDasharray="4 4"
+                        />
+
+                        {/* Node Dots */}
+                        {weeklyTrend.map((d, i) => {
+                          const px = 30 + i * 72;
+                          const pyPosts = 150 - (d.posts / trendMax) * 110;
+                          const pyOffers = 150 - (d.offers / trendMax) * 110;
+                          return (
+                            <g key={i}>
+                              <circle cx={px} cy={pyPosts} r="4" fill="#312E81" className="cursor-pointer" />
+                              <circle cx={px} cy={pyOffers} r="4" fill="#10b981" className="cursor-pointer" />
+                            </g>
+                          );
+                        })}
+                      </>
+                    );
+                  })()}
+                </svg>
+              </>
+            ) : (
+              <div className="flex items-center justify-center h-full text-xs text-slate-400 font-semibold">
+                Grafik verisi yüklenemedi.
+              </div>
+            )}
+
+            {/* Legend */}
+            <div className="absolute bottom-1 right-2 flex items-center gap-4 text-[10px] font-black text-slate-500">
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-1 bg-[#312E81] rounded"></span>
+                İlanlar
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-1 bg-[#10b981] rounded-dashed border border-t border-emerald-500"></span>
+                Teklifler
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Categories Bar Chart */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded bg-emerald-600"></span>
+              En Popüler Kategoriler
+            </h3>
+            <p className="text-[11px] text-slate-400 font-medium">Platform genelinde en fazla alıcı ilanı açılan kategoriler.</p>
+          </div>
+
+          <div className="space-y-4 pt-2">
+            {categoryStats.length > 0 ? (
+              categoryStats.slice(0, 5).map((cat, idx) => {
+                const maxCount = Math.max(...categoryStats.map(c => c.count), 1);
+                const percent = `${Math.max((cat.count / maxCount) * 100, 8)}%`;
+                const sysCategories = categoryService.getCategories();
+                const catName = sysCategories.find((c) => c.id === cat.category)?.name ?? cat.category;
+                const colors = ['bg-indigo-600', 'bg-emerald-500', 'bg-blue-500', 'bg-amber-500', 'bg-rose-500'];
+                const catColor = colors[idx % colors.length];
+
+                return (
+                  <div key={idx} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="text-slate-800">{catName}</span>
+                      <span className="text-slate-400">{cat.count} İlan</span>
+                    </div>
+                    <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className={`h-full ${catColor} rounded-full transition-all duration-500`} style={{ width: percent }}></div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center text-xs text-slate-400 py-16 font-semibold">
+                Henüz kategori istatistiği bulunmuyor.
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Recent Activity Sections */}

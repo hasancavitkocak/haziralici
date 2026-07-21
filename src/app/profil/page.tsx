@@ -15,6 +15,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { profileService } from '@/services/profileService';
 import { postService } from '@/services/postService';
 import { offerService } from '@/services/offerService';
+import { chatService } from '@/services/chatService';
 import {
   User,
   Mail,
@@ -129,6 +130,24 @@ export default function ProfilePage() {
       setLoadingOffers((prev) => ({ ...prev, [postId]: false }));
     }
   }, [expandedPostId, postOffers]);
+
+  const [chatLoadingId, setChatLoadingId] = useState<string | null>(null);
+
+  const handleStartChat = async (postId: string, buyerId: string, sellerId: string) => {
+    setChatLoadingId(sellerId);
+    try {
+      const { data, error } = await chatService.createOrGetRoom(postId, buyerId, sellerId);
+      if (data) {
+        router.push(`/mesajlar?room_id=${data.id}`);
+      } else {
+        alert('Sohbet odası açılamadı: ' + error);
+      }
+    } catch (err: any) {
+      alert('Hata: ' + err.message);
+    } finally {
+      setChatLoadingId(null);
+    }
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -509,9 +528,18 @@ export default function ProfilePage() {
                         <p className="text-xs text-slate-400 text-center py-4">Henüz teklif gelmedi.</p>
                       ) : (
                         (postOffers[post.id] || []).map((offer, idx) => (
-                          <div key={offer.id} className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-2">
+                          <div key={offer.id} className={`bg-slate-50 rounded-2xl p-4 border space-y-2 ${
+                            offer.is_accepted ? 'border-emerald-400 bg-emerald-50/10' : 'border-slate-100'
+                          }`}>
                             <div className="flex items-center justify-between">
-                              <span className="text-[11px] font-bold text-slate-500">Teklif #{idx + 1}</span>
+                              <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
+                                Teklif #{idx + 1}
+                                {offer.is_accepted && (
+                                  <span className="bg-emerald-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                    Kabul Edildi
+                                  </span>
+                                )}
+                              </span>
                               <span className="text-base font-black text-emerald-600">{formatCurrency(offer.price)}</span>
                             </div>
                             {offer.description && (
@@ -533,7 +561,21 @@ export default function ProfilePage() {
                                 )}
                               </div>
                             )}
-                            <span className="text-[10px] text-slate-400">{formatDate(offer.created_at)}</span>
+                            <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
+                              <span className="text-[10px] text-slate-400">{formatDate(offer.created_at)}</span>
+                              <button
+                                onClick={() => handleStartChat(post.id, post.user_id, offer.user_id)}
+                                disabled={chatLoadingId === offer.user_id}
+                                className="px-3 py-1.5 bg-[#312E81] text-white text-[10px] font-black rounded-lg hover:bg-[#252261] transition-all cursor-pointer flex items-center gap-1 shadow-sm disabled:opacity-55"
+                              >
+                                {chatLoadingId === offer.user_id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <MessageSquare className="w-3 h-3" />
+                                )}
+                                <span>Mesajlaş</span>
+                              </button>
+                            </div>
                           </div>
                         ))
                       )}
@@ -570,17 +612,24 @@ export default function ProfilePage() {
                         className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-3"
                       >
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                          {offer.buyer_posts ? (
-                            <Link
-                              href={`/ilan/${offer.buyer_posts.id}`}
-                              className="font-bold text-[#312E81] hover:underline text-sm flex items-center gap-1.5"
-                            >
-                              <span>İlan: {offer.buyer_posts.title}</span>
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </Link>
-                          ) : (
-                            <span className="text-xs text-slate-400">Silinmiş İlan</span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {offer.buyer_posts ? (
+                              <Link
+                                href={`/ilan/${offer.buyer_posts.id}`}
+                                className="font-bold text-[#312E81] hover:underline text-sm flex items-center gap-1.5"
+                              >
+                                <span>İlan: {offer.buyer_posts.title}</span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </Link>
+                            ) : (
+                              <span className="text-xs text-slate-400">Silinmiş İlan</span>
+                            )}
+                            {offer.is_accepted && (
+                              <span className="bg-emerald-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                Kabul Edildi
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[11px] text-slate-400">{formatDate(offer.created_at)}</span>
                         </div>
 
@@ -595,7 +644,23 @@ export default function ProfilePage() {
                           {offer.description}
                         </p>
 
-                        <div className="text-right pt-1">
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-100 mt-2">
+                          <div>
+                            {offer.buyer_posts && (
+                              <button
+                                onClick={() => handleStartChat(offer.buyer_posts!.id, offer.buyer_posts!.user_id, offer.user_id)}
+                                disabled={chatLoadingId === offer.user_id}
+                                className="px-3 py-1.5 bg-[#312E81] text-white text-[10px] font-black rounded-lg hover:bg-[#252261] transition-all cursor-pointer flex items-center gap-1 shadow-sm disabled:opacity-55"
+                              >
+                                {chatLoadingId === offer.user_id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <MessageSquare className="w-3.5 h-3.5" />
+                                )}
+                                <span>Alıcıyla Mesajlaş</span>
+                              </button>
+                            )}
+                          </div>
                           <Button
                             size="sm"
                             variant="ghost"

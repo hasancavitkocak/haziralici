@@ -1,16 +1,21 @@
 import React from 'react';
 import { SellerOffer } from '@/types';
 import { formatCurrency, formatDate, formatDisplayName } from '@/lib/utils';
-import { Lock, Clock, ShieldCheck, Phone } from 'lucide-react';
+import { Lock, Clock, ShieldCheck, Phone, MessageSquare, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 
 interface OfferCardProps {
   offer: SellerOffer;
   isPostOwner?: boolean;
+  onStartChat?: () => void;
+  chatLoading?: boolean;
 }
 
 export const OfferCard = ({
   offer,
   isPostOwner = false,
+  onStartChat,
+  chatLoading = false,
 }: OfferCardProps) => {
   const sellerName = formatDisplayName(offer.profiles?.full_name, offer.profiles?.email);
   const initial = sellerName.charAt(0).toUpperCase();
@@ -60,27 +65,51 @@ export const OfferCard = ({
         </p>
       </div>
 
-      {/* Contact Info (Visible to Post Owner) */}
-      {isPostOwner && (
-        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2 pt-3">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-            Satıcı İletişim Numarası:
-          </span>
-          <div>
-            {offer.profiles?.phone ? (
-              <a
-                href={`tel:${offer.profiles.phone}`}
-                className="inline-flex items-center gap-2 text-emerald-700 hover:text-emerald-800 font-extrabold bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl transition-colors shadow-sm text-xs"
-              >
-                <Phone className="w-4 h-4 text-emerald-600" />
-                <span>{offer.profiles.phone}</span>
-              </a>
-            ) : (
-              <span className="text-slate-400 text-xs italic">Telefon numarası belirtilmemiş</span>
-            )}
+      {/* Actions and Info Footer */}
+      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3">
+        {isPostOwner ? (
+          <div className="space-y-1">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+              Satıcı İletişim Numarası:
+            </span>
+            <div>
+              {offer.profiles?.phone ? (
+                <a
+                  href={`tel:${offer.profiles.phone}`}
+                  className="inline-flex items-center gap-2 text-emerald-700 hover:text-emerald-800 font-extrabold"
+                >
+                  <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-xs">{offer.profiles.phone}</span>
+                </a>
+              ) : (
+                <span className="text-slate-400 text-xs italic">Telefon numarası belirtilmemiş</span>
+              )}
+            </div>
           </div>
+        ) : (
+          <div className="text-xs text-slate-500 font-medium">
+            Bu ilan için verdiğiniz teklif alıcı tarafından incelenmektedir.
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          {onStartChat && (
+            <Button
+              size="sm"
+              disabled={chatLoading}
+              onClick={onStartChat}
+              className="bg-[#312E81] hover:bg-[#252261] text-white text-xs font-bold py-1.5 px-3.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+            >
+              {chatLoading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <MessageSquare className="w-3.5 h-3.5" />
+              )}
+              <span>{isPostOwner ? 'Satıcıyla Mesajlaş' : 'Alıcıyla Mesajlaş'}</span>
+            </Button>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

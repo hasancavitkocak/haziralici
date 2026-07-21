@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { notificationService } from '@/services/notificationService';
+import { chatService } from '@/services/chatService';
 import { UserNotification } from '@/types';
 import { Button } from '@/components/ui/Button';
 import {
@@ -21,6 +22,7 @@ import {
   User,
   ChevronDown,
   Tag,
+  MessageSquare,
 } from 'lucide-react';
 import { formatDisplayName, formatDate } from '@/lib/utils';
 
@@ -32,6 +34,7 @@ export const Navbar = () => {
   const initial = displayName.charAt(0).toUpperCase();
 
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -42,6 +45,9 @@ export const Navbar = () => {
     if (user?.id) {
       const data = await notificationService.getNotifications(user.id);
       setNotifications(data);
+
+      const msgCount = await chatService.getUnreadCountTotal(user.id);
+      setUnreadMessages(msgCount);
     }
   };
 
@@ -115,6 +121,20 @@ export const Navbar = () => {
 
           {user ? (
             <div className="flex items-center gap-2 sm:gap-3">
+              {/* Messages Link */}
+              <Link
+                href="/mesajlar"
+                className="relative p-2 rounded-2xl bg-slate-100/80 hover:bg-indigo-50 hover:text-[#312E81] text-slate-600 transition-colors cursor-pointer"
+                title="Mesajlar"
+              >
+                <MessageSquare className="w-5 h-5" />
+                {unreadMessages > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white rounded-full text-[10px] font-black flex items-center justify-center border-2 border-white shadow-sm">
+                    {unreadMessages > 9 ? '9+' : unreadMessages}
+                  </span>
+                )}
+              </Link>
+
               {/* Notification Bell */}
               <div className="relative" ref={notifRef}>
                 <button

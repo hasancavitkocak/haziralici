@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { offerService } from '@/services/offerService';
 import { SellerOffer } from '@/types';
+import { useAuth } from '@/context/AuthContext';
+import { auditLogService } from '@/services/auditLogService';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import {
@@ -16,6 +18,7 @@ import {
 } from 'lucide-react';
 
 export default function AdminOffersPage() {
+  const { user } = useAuth();
   const [offers, setOffers] = useState<SellerOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,10 +45,18 @@ export default function AdminOffersPage() {
       return;
     }
 
+    const offerObj = offers.find((o) => o.id === offerId);
     setDeletingId(offerId);
     try {
       const { success, error } = await offerService.deleteOffer(offerId);
       if (success) {
+        // Log action
+        auditLogService.logAction(
+          'Teklif Silindi',
+          `"${offerObj?.profiles?.full_name || 'Satıcı'}" tarafından "${offerObj?.buyer_posts?.title || 'İlan'}" ilanına verilen ₺${offerObj?.price || 0} tutarındaki teklif silindi.`,
+          user?.email || 'Admin'
+        );
+
         setOffers(offers.filter((o) => o.id !== offerId));
       } else {
         alert('Teklif silinemedi: ' + error);

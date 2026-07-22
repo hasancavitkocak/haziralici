@@ -48,7 +48,9 @@ class ChatService {
       msg.includes('chat_rooms') ||
       msg.includes('chat_messages') ||
       msg.includes('42P01') ||
-      msg.includes('schema cache')
+      msg.includes('schema cache') ||
+      msg.includes('Failed to fetch') ||
+      msg.includes('fetch')
     );
   }
 

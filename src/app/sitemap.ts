@@ -34,6 +34,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Dynamic Post detail routes
   try {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')) {
+      return routes;
+    }
     const posts = await postService.getActivePosts();
     const postRoutes: MetadataRoute.Sitemap = posts.map((post) => ({
       url: `${baseUrl}/ilan/${post.id}`,

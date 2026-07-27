@@ -153,7 +153,7 @@ export const Navbar = () => {
 
                 {/* Notifications Dropdown */}
                 {isNotifOpen && (
-                  <div className="absolute right-0 mt-3 w-80 sm:w-96 rounded-3xl bg-white border border-slate-200 shadow-2xl z-50 py-3 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute -right-2 sm:right-0 mt-3 w-[calc(100vw-2rem)] max-w-sm sm:w-96 rounded-3xl bg-white border border-slate-200 shadow-2xl z-50 py-3 animate-in fade-in zoom-in-95 duration-150">
                     <div className="flex items-center justify-between px-4 pb-3 border-b border-slate-100">
                       <div className="flex items-center gap-2">
                         <Bell className="w-4 h-4 text-[#312E81]" />
@@ -278,6 +278,17 @@ export const Navbar = () => {
                       <User className="w-3.5 h-3.5" />
                       <span>Profilim & İlanlarım</span>
                     </Link>
+
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-amber-800 hover:bg-amber-50 transition-colors"
+                      >
+                        <Shield className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Yönetim Paneli</span>
+                      </Link>
+                    )}
 
                     <div className="border-t border-slate-100 mt-1 pt-1">
                       <button

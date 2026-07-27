@@ -282,12 +282,22 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <Link href="/ilan-ver">
-            <Button size="sm" className="shadow-md whitespace-nowrap">
-              <PlusCircle className="w-4 h-4 mr-1.5" />
-              Yeni İlan Ver
-            </Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            {(profile?.role === 'admin' || user.email?.toLowerCase() === 'hasancavitkocak@gmail.com') && (
+              <Link href="/admin">
+                <Button size="sm" variant="secondary" className="bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 font-bold shadow-sm">
+                  <Shield className="w-4 h-4 mr-1.5 text-amber-600" />
+                  Yönetim Paneli
+                </Button>
+              </Link>
+            )}
+            <Link href="/ilan-ver">
+              <Button size="sm" className="shadow-md whitespace-nowrap">
+                <PlusCircle className="w-4 h-4 mr-1.5" />
+                Yeni İlan Ver
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Full Profile Settings Form */}

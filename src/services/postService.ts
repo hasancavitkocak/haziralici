@@ -12,50 +12,6 @@ class PostService {
   private cache: Map<string, CacheEntry<any>> = new Map();
   private CACHE_TTL_MS = 60 * 1000; // 1 minute in-memory cache
 
-  // Local moderation stores for check constraint compatibility
-  private getUnapprovedIds(): string[] {
-    if (typeof window === 'undefined') return [];
-    try {
-      const stored = localStorage.getItem('unapproved_post_ids');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  private addUnapprovedId(id: string): void {
-    if (typeof window === 'undefined') return;
-    const current = this.getUnapprovedIds();
-    if (!current.includes(id)) {
-      current.push(id);
-      localStorage.setItem('unapproved_post_ids', JSON.stringify(current));
-    }
-  }
-
-  private removeUnapprovedId(id: string): void {
-    if (typeof window === 'undefined') return;
-    const current = this.getUnapprovedIds().filter((itemId) => itemId !== id);
-    localStorage.setItem('unapproved_post_ids', JSON.stringify(current));
-  }
-
-  private getRejectedMap(): Record<string, string> {
-    if (typeof window === 'undefined') return {};
-    try {
-      const stored = localStorage.getItem('rejected_post_reasons');
-      return stored ? JSON.parse(stored) : {};
-    } catch {
-      return {};
-    }
-  }
-
-  private addRejectedId(id: string, reason: string): void {
-    if (typeof window === 'undefined') return;
-    const map = this.getRejectedMap();
-    map[id] = reason;
-    localStorage.setItem('rejected_post_reasons', JSON.stringify(map));
-    this.removeUnapprovedId(id);
-  }
-
   private getUrgencyMap(): Record<string, string> {
     if (typeof window === 'undefined') return {};
     try {
@@ -145,19 +101,15 @@ class PostService {
         }
       }
 
-      const unapprovedIds = this.getUnapprovedIds();
-      const rejectedMap = this.getRejectedMap();
       const urgencyMap = this.getUrgencyMap();
 
-      const formattedPosts = ((data || []) as any[])
-        .filter((item) => !unapprovedIds.includes(item.id) && !rejectedMap[item.id]) // Exclude unapproved/rejected posts from homepage
-        .map((item) => ({
-          ...item,
-          urgency: item.urgency || urgencyMap[item.id] || 'today',
-          offers_count: Array.isArray(item.seller_offers)
-            ? item.seller_offers.length
-            : (item.seller_offers?.[0]?.count ?? 0),
-        })) as BuyerPost[];
+      const formattedPosts = ((data || []) as any[]).map((item) => ({
+        ...item,
+        urgency: item.urgency || urgencyMap[item.id] || 'today',
+        offers_count: Array.isArray(item.seller_offers)
+          ? item.seller_offers.length
+          : (item.seller_offers?.[0]?.count ?? 0),
+      })) as BuyerPost[];
 
       this.cache.set(cacheKey, {
         data: formattedPosts,
@@ -220,27 +172,23 @@ class PostService {
         const fb = await fallback;
         if (fb.error) return { posts: [], total: 0 };
 
-        const unapprovedIds = this.getUnapprovedIds();
-        const rejectedMap = this.getRejectedMap();
         const urgencyMap = this.getUrgencyMap();
-        const posts = ((fb.data || []) as any[])
-          .filter((item) => !unapprovedIds.includes(item.id) && !rejectedMap[item.id])
-          .map((item) => ({ ...item, urgency: item.urgency || urgencyMap[item.id] || 'today', offers_count: 0 })) as BuyerPost[];
+        const posts = ((fb.data || []) as any[]).map((item) => ({
+          ...item,
+          urgency: item.urgency || urgencyMap[item.id] || 'today',
+          offers_count: 0,
+        })) as BuyerPost[];
         return { posts, total: fb.count ?? 0 };
       }
 
-      const unapprovedIds = this.getUnapprovedIds();
-      const rejectedMap = this.getRejectedMap();
       const urgencyMap = this.getUrgencyMap();
-      const posts = ((data || []) as any[])
-        .filter((item) => !unapprovedIds.includes(item.id) && !rejectedMap[item.id])
-        .map((item) => ({
-          ...item,
-          urgency: item.urgency || urgencyMap[item.id] || 'today',
-          offers_count: Array.isArray(item.seller_offers)
-            ? item.seller_offers.length
-            : 0,
-        })) as BuyerPost[];
+      const posts = ((data || []) as any[]).map((item) => ({
+        ...item,
+        urgency: item.urgency || urgencyMap[item.id] || 'today',
+        offers_count: Array.isArray(item.seller_offers)
+          ? item.seller_offers.length
+          : 0,
+      })) as BuyerPost[];
 
       return { posts, total: count ?? 0 };
     } catch (err) {
@@ -248,8 +196,6 @@ class PostService {
       return { posts: [], total: 0 };
     }
   }
-
-
 
   public async getPostById(postId: string): Promise<BuyerPost | null> {
     const cacheKey = `post_detail_${postId}`;
@@ -280,19 +226,13 @@ class PostService {
 
       if (!data) return null;
 
-      const unapprovedIds = this.getUnapprovedIds();
-      const rejectedMap = this.getRejectedMap();
       const urgencyMap = this.getUrgencyMap();
 
       const post = {
         ...(data as BuyerPost),
         urgency: (data as any).urgency || urgencyMap[postId] || 'today',
-        status: unapprovedIds.includes(postId)
-          ? ('pending' as PostStatus)
-          : rejectedMap[postId]
-          ? ('rejected' as PostStatus)
-          : ((data as any).status as PostStatus),
-        rejection_reason: rejectedMap[postId] || (data as any).rejection_reason || null,
+        status: ((data as any).status as PostStatus) || 'pending',
+        rejection_reason: (data as any).rejection_reason || null,
       };
 
       this.cache.set(cacheKey, {
@@ -314,7 +254,9 @@ class PostService {
   public async createPost(userId: string, payload: CreatePostPayload): Promise<{ data: BuyerPost | null; error: string | null }> {
     this.invalidateCache();
     try {
-      // Insert with status 'active' to satisfy Postgres buyer_posts_status_check constraint 100%
+      const settings = settingsService.getSettings();
+      const targetStatus: PostStatus = settings.autoApprovePosts ? 'active' : 'pending';
+
       let { data, error } = await supabase
         .from('buyer_posts')
         .insert({
@@ -327,7 +269,7 @@ class PostService {
           location_city: payload.location_city,
           location_district: payload.location_district,
           urgency: payload.urgency || 'today',
-          status: 'active',
+          status: targetStatus,
         })
         .select()
         .single();
@@ -345,7 +287,7 @@ class PostService {
             max_budget: Number(payload.max_budget),
             location_city: payload.location_city,
             location_district: payload.location_district,
-            status: 'active',
+            status: targetStatus,
           })
           .select()
           .single();
@@ -362,16 +304,10 @@ class PostService {
       const selectedUrgency = payload.urgency || 'today';
       this.setPostUrgency(createdPost.id, selectedUrgency);
 
-      const settings = settingsService.getSettings();
-      if (!settings.autoApprovePosts) {
-        // Mark as unapproved so it enters admin evaluation and hides from homepage
-        this.addUnapprovedId(createdPost.id);
-      }
-
       return {
         data: {
           ...createdPost,
-          status: settings.autoApprovePosts ? 'active' : 'pending',
+          status: (createdPost.status as PostStatus) || targetStatus,
         },
         error: null,
       };
@@ -383,20 +319,25 @@ class PostService {
   public async updatePostStatus(postId: string, status: PostStatus, rejectionReason?: string): Promise<{ success: boolean; error?: string }> {
     this.invalidateCache();
     try {
-      if (status === 'active') {
-        this.removeUnapprovedId(postId);
-      } else if (status === 'rejected') {
-        this.addRejectedId(postId, rejectionReason || 'İçerik kurallara uygun bulunmadı.');
-      } else if (status === 'pending' || status === 'inactive') {
-        this.addUnapprovedId(postId);
-      }
-
-      const { error } = await supabase
+      // Primary attempt: Update status and rejection_reason directly in DB
+      let { error } = await supabase
         .from('buyer_posts')
-        .update({ status: status === 'resolved' ? 'resolved' : 'active' })
+        .update({
+          status: status,
+          rejection_reason: status === 'rejected' ? (rejectionReason || 'İçerik kurallara uygun bulunmadı.') : null,
+        })
         .eq('id', postId);
 
-      if (error && !error.message?.includes('status_check')) {
+      // Fallback if rejection_reason column is not in DB schema
+      if (error && (error.message?.includes('rejection_reason') || error.message?.includes('column'))) {
+        const fallback = await supabase
+          .from('buyer_posts')
+          .update({ status: status })
+          .eq('id', postId);
+        error = fallback.error;
+      }
+
+      if (error) {
         return { success: false, error: error.message };
       }
 
@@ -409,7 +350,6 @@ class PostService {
   public async deletePost(postId: string): Promise<{ success: boolean; error?: string }> {
     this.invalidateCache();
     try {
-      this.removeUnapprovedId(postId);
       const { error } = await supabase
         .from('buyer_posts')
         .delete()
@@ -439,19 +379,13 @@ class PostService {
         return [];
       }
 
-      const unapprovedIds = this.getUnapprovedIds();
-      const rejectedMap = this.getRejectedMap();
       const urgencyMap = this.getUrgencyMap();
 
       return (data as any[]).map((item) => ({
         ...item,
         urgency: item.urgency || urgencyMap[item.id] || 'today',
-        status: unapprovedIds.includes(item.id)
-          ? ('pending' as PostStatus)
-          : rejectedMap[item.id]
-          ? ('rejected' as PostStatus)
-          : (item.status as PostStatus),
-        rejection_reason: rejectedMap[item.id] || item.rejection_reason || null,
+        status: (item.status as PostStatus) || 'pending',
+        rejection_reason: item.rejection_reason || null,
       })) as BuyerPost[];
     } catch (err) {
       console.error('PostService getAllPostsForAdmin error:', err);
@@ -461,3 +395,4 @@ class PostService {
 }
 
 export const postService = new PostService();
+

@@ -65,19 +65,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    // Initial session get
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user?.id) {
-        fetchProfile(session.user.id, session.user.email);
+    let isMounted = true;
+
+    if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery') && !window.location.pathname.startsWith('/sifre-sifirla')) {
+      window.location.href = '/sifre-sifirla' + window.location.hash;
+      return;
+    }
+
+    const initSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (session?.user?.id) {
+          await fetchProfile(session.user.id, session.user.email);
+        } else {
+          setProfile(null);
+        }
+      } catch (err) {
+        console.error('Error initializing auth session:', err);
+      } finally {
+        if (isMounted) setLoading(false);
       }
-      setLoading(false);
-    });
+    };
+
+    initSession();
 
     // Listen to Auth State Changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        if (!isMounted) return;
+
+        if (event === 'PASSWORD_RECOVERY' && typeof window !== 'undefined' && !window.location.pathname.startsWith('/sifre-sifirla')) {
+          window.location.href = '/sifre-sifirla' + window.location.hash;
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user?.id) {
@@ -90,6 +116,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);

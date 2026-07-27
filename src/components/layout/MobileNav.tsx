@@ -31,15 +31,7 @@ export const MobileNav = () => {
           <span className="text-[11px] leading-none">Ana Sayfa</span>
         </Link>
 
-        {/* Admin (sadece admin kullanıcıya) */}
-        {isAdmin && (
-          <Link href="/admin" className={`flex flex-col items-center gap-1 py-1 px-2 rounded-xl transition-all ${
-            isActive('/admin') ? 'text-amber-600 font-bold scale-105' : 'text-amber-500/80 font-medium'
-          }`}>
-            <Shield className="w-5 h-5" />
-            <span className="text-[10px] leading-none">Admin</span>
-          </Link>
-        )}
+
 
         {/* İlan Ver — merkez çıkıntılı buton */}
         <Link href="/ilan-ver" className="flex flex-col items-center -mt-5 group">

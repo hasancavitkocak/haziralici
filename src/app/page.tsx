@@ -49,6 +49,7 @@ export default function HomePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [announcement, setAnnouncement] = useState(() => settingsService.getDefaultSettings().announcementBanner);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -56,6 +57,7 @@ export default function HomePage() {
       if (saved === 'grid' || saved === 'list') {
         setViewMode(saved);
       }
+      setAnnouncement(settingsService.getSettings().announcementBanner);
     }
   }, []);
 
@@ -84,7 +86,6 @@ export default function HomePage() {
     fetchPosts();
   }, [fetchPosts]);
 
-  // Reset to page 1 when filters/sort change
   const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat);
     setCurrentPage(1);
@@ -99,7 +100,6 @@ export default function HomePage() {
     setIsSortOpen(false);
   };
 
-  // Client-side search + quick filter (applied on top of server results)
   const filteredPosts = posts.filter((post) => {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -123,7 +123,6 @@ export default function HomePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Page number buttons — show at most 5 around current
   const getPageNumbers = () => {
     const pages: (number | '...')[] = [];
     if (totalPages <= 7) {
@@ -140,10 +139,8 @@ export default function HomePage() {
     return pages;
   };
 
-  const announcement = settingsService.getSettings().announcementBanner;
-
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-2">
       {/* Announcement Banner */}
       {announcement?.enabled && announcement?.text && (
         <div className={`p-4 rounded-2xl border text-xs font-bold flex items-center justify-between gap-3 shadow-sm ${
@@ -155,12 +152,11 @@ export default function HomePage() {
         }`}>
           <div className="flex items-center gap-2.5">
             <Megaphone className="w-4 h-4 shrink-0 text-[#312E81]" />
-            <span>{announcement.text}</span>
+            <span suppressHydrationWarning>{announcement.text}</span>
           </div>
         </div>
       )}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* LEFT SIDEBAR */}
         <aside className="lg:col-span-3 xl:col-span-3 space-y-6 lg:sticky lg:top-28">
           <SidebarCategories
             selectedCategory={selectedCategory}

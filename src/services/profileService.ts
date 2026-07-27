@@ -74,13 +74,11 @@ class ProfileService {
         return [];
       }
 
-      let unapprovedIds: string[] = [];
-      let rejectedMap: Record<string, string> = {};
       let urgencyMap: Record<string, string> = {};
       if (typeof window !== 'undefined') {
         try {
-          unapprovedIds = JSON.parse(localStorage.getItem('unapproved_post_ids') || '[]');
-          rejectedMap = JSON.parse(localStorage.getItem('rejected_post_reasons') || '{}');
+          localStorage.removeItem('unapproved_post_ids');
+          localStorage.removeItem('rejected_post_reasons');
           urgencyMap = JSON.parse(localStorage.getItem('post_urgency_map') || '{}');
         } catch {}
       }
@@ -88,12 +86,8 @@ class ProfileService {
       const formatted = (data as any[]).map((item) => ({
         ...item,
         urgency: item.urgency || urgencyMap[item.id] || 'today',
-        status: unapprovedIds.includes(item.id)
-          ? ('pending' as PostStatus)
-          : rejectedMap[item.id]
-          ? ('rejected' as PostStatus)
-          : (item.status as PostStatus),
-        rejection_reason: rejectedMap[item.id] || item.rejection_reason || null,
+        status: (item.status as PostStatus) || 'pending',
+        rejection_reason: item.rejection_reason || null,
         offers_count: item.seller_offers?.[0]?.count ?? 0,
       })) as BuyerPost[];
 

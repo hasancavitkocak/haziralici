@@ -88,10 +88,10 @@ export default function RootLayout({
       <body className="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen flex flex-col selection:bg-[#312E81] selection:text-white">
         <AuthProvider>
           <Navbar />
-          <main className="flex-1 max-w-[1536px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-24 sm:pb-6">
+          <main className="flex-1 max-w-[1536px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-4 sm:pb-6">
             {children}
           </main>
-          <div className="pb-20 sm:pb-0">
+          <div className="pb-16 sm:pb-0">
             <Footer />
           </div>
           <MobileNav />

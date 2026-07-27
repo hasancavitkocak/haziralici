@@ -23,6 +23,10 @@ const DEFAULT_SETTINGS: SystemSettings = {
 class SettingsService {
   private STORAGE_KEY = 'system_platform_settings';
 
+  public getDefaultSettings(): SystemSettings {
+    return DEFAULT_SETTINGS;
+  }
+
   public getSettings(): SystemSettings {
     if (typeof window === 'undefined') return DEFAULT_SETTINGS;
     try {

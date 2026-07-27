@@ -69,9 +69,9 @@ export const PostCard = ({ post, viewMode = 'grid' }: PostCardProps) => {
           </div>
 
           {/* Right Action Side */}
-          <div className="flex sm:flex-row md:flex-col items-start sm:items-center md:items-end justify-between sm:justify-end gap-3 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+          <div className="flex flex-wrap sm:flex-row md:flex-col items-start sm:items-center md:items-end justify-between sm:justify-end gap-2.5 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
             {/* Budget */}
-            <Badge variant="emerald" className="text-xs py-1.5 px-3 font-extrabold shadow-sm whitespace-nowrap shrink-0">
+            <Badge variant="emerald" className="text-xs py-1.5 px-3 font-extrabold shadow-sm whitespace-normal break-words shrink-0 max-w-full">
               {formatCurrency(post.min_budget)} — {formatCurrency(post.max_budget)}
             </Badge>
 

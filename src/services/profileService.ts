@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase/client';
-import { Profile, BuyerPost, SellerOffer, UserRole } from '@/types';
+import { Profile, BuyerPost, SellerOffer, UserRole, PostStatus } from '@/types';
 
 export interface UpdateProfilePayload {
   full_name?: string;

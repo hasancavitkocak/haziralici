@@ -47,11 +47,6 @@ export const Footer = () => {
                   <span>Profilim & İlanlarım</span>
                 </Link>
               </li>
-              <li>
-                <Link href="/login" className="hover:text-[#312E81] transition-colors flex items-center gap-1">
-                  <span>Giriş Yap / Kayıt Ol</span>
-                </Link>
-              </li>
             </ul>
           </div>
 

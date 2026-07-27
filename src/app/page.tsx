@@ -250,7 +250,7 @@ export default function HomePage() {
                 )}
               </div>
 
-              <Link href="/ilan-ver">
+              <Link href="/ilan-ver" className="hidden sm:inline-block">
                 <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm whitespace-nowrap">
                   <PlusCircle className="w-4 h-4 mr-1.5" />
                   İlan Oluştur

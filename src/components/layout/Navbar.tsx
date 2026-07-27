@@ -105,13 +105,9 @@ export const Navbar = () => {
 
         {/* Action Buttons & Auth */}
         <div className="flex items-center gap-2 sm:gap-4">
-          <Link href="/ilan-ver">
-            {/* Mobile: icon-only pill */}
-            <Button variant="emerald" size="sm" className="sm:hidden flex items-center justify-center w-9 h-9 p-0 rounded-full">
-              <PlusCircle className="w-5 h-5" />
-            </Button>
+          <Link href="/ilan-ver" className="hidden sm:block">
             {/* sm+: icon + text */}
-            <Button variant="emerald" size="sm" className="hidden sm:inline-flex items-center gap-1.5 text-sm whitespace-nowrap px-4 py-2">
+            <Button variant="emerald" size="sm" className="inline-flex items-center gap-1.5 text-sm whitespace-nowrap px-4 py-2">
               <PlusCircle className="w-4 h-4" />
               <span>İlan Ver</span>
             </Button>

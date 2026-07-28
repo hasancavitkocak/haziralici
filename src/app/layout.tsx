@@ -16,20 +16,28 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://haziralici.com';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'haziralici.com — Türkiye’nin Tersine Pazar Yeri',
+    default: 'haziralici.com — Türkiye’nin Tersine Pazar Yeri & Alıcı İlanları',
     template: '%s | haziralici.com',
   },
-  description: 'Alıcılar ne aradıklarını ve bütçelerini ilan eder; satıcılar gizli teklifler sunar. Sıfır komisyonlu tersine alışveriş platformu.',
+  description: 'Alıcılar ne aradıklarını ve bütçelerini ilan eder; satıcılar gizli teklifler sunar. Türkiye’nin ilk komisyonsuz tersine alışveriş ve ilan platformu.',
   keywords: [
     'tersine pazar yeri',
-    'alıcı ilanı',
+    'alıcı ilanları',
+    'alıcı ilanı ver',
+    'ne arıyorum',
     'teklif al',
     'hazır alıcı',
     'ikinci el alım',
     'gayrimenkul arıyorum',
     'vasıta arıyorum',
     'bütçeli alıcılar',
+    'fiyat teklifi al',
+    'satın almak istiyorum',
+    'sahibinden arayanlar',
   ],
+  alternates: {
+    canonical: siteUrl,
+  },
   authors: [{ name: 'haziralici.com' }],
   creator: 'haziralici.com',
   publisher: 'haziralici.com',
@@ -83,8 +91,44 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLdWebsite = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'haziralici.com',
+    alternateName: 'Hazır Alıcı Tersine Pazar Yeri',
+    url: siteUrl,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${siteUrl}/?search={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  };
+
+  const jsonLdOrganization = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'haziralici.com',
+    url: siteUrl,
+    logo: `${siteUrl}/logo.png`,
+    description: 'Türkiye’nin tersine pazar yeri ve alıcı ilanları platformu.',
+    sameAs: [],
+  };
+
   return (
     <html lang="tr" className={inter.variable}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdWebsite) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdOrganization) }}
+        />
+      </head>
       <body className="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen flex flex-col selection:bg-[#312E81] selection:text-white">
         <AuthProvider>
           <Navbar />
@@ -100,3 +144,4 @@ export default function RootLayout({
     </html>
   );
 }
+

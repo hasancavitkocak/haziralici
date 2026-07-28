@@ -36,6 +36,10 @@ class AuditLogService {
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
   }
 
+  public logReport(reason: string, details: string, reporterEmail: string = 'Kullanıcı Bildirimi'): void {
+    this.logAction('🚨 İçerik Şikayeti', `Sebep: ${reason} | ${details}`, reporterEmail);
+  }
+
   public clearLogs(): void {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(this.STORAGE_KEY);
@@ -44,3 +48,4 @@ class AuditLogService {
 }
 
 export const auditLogService = new AuditLogService();
+

@@ -105,6 +105,11 @@ export default function AdminLayout({
       icon: Layers,
     },
     {
+      name: 'Şikayet Yönetimi',
+      href: '/admin/reports',
+      icon: AlertTriangle,
+    },
+    {
       name: 'Yönetici Günlüğü',
       href: '/admin/logs',
       icon: Activity,

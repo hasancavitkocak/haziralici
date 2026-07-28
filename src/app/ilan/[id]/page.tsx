@@ -25,11 +25,14 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  Flag,
 } from 'lucide-react';
 
 import { postService } from '@/services/postService';
 import { offerService } from '@/services/offerService';
 import { chatService } from '@/services/chatService';
+import { auditLogService } from '@/services/auditLogService';
+import { ReportModal } from '@/components/ui/ReportModal';
 
 export default function PostDetailPage({
   params,
@@ -45,7 +48,9 @@ export default function PostDetailPage({
   const [offers, setOffers] = useState<SellerOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [offersPage, setOffersPage] = useState(1);
+
 
   const fetchPostDetails = async (isBackground = false) => {
     if (!isBackground && !post) {
@@ -162,6 +167,15 @@ export default function PostDetailPage({
   const totalOfferPages = Math.ceil(offers.length / OFFERS_PER_PAGE);
   const currentOffers = offers.slice((offersPage - 1) * OFFERS_PER_PAGE, offersPage * OFFERS_PER_PAGE);
 
+  const handlePostReportSubmit = (reason: string, details: string) => {
+    if (!post) return;
+    auditLogService.logReport(
+      reason,
+      `${details} | Kategori: ${post.category} | İlan Sahibi: ${authorName}`,
+      user?.email || 'Anonim Kullanıcı'
+    );
+  };
+
   return (
     <div className="w-full space-y-6">
       {/* Top Back & Navigation Bar */}
@@ -174,15 +188,27 @@ export default function PostDetailPage({
           Anasayfa Akışına Dön
         </Link>
 
-        {/* WhatsApp Share Button */}
-        <button
-          onClick={handleWhatsAppShare}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
-        >
-          <Share2 className="w-4 h-4" />
-          <span>WhatsApp'ta Paylaş</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Report Button */}
+          <button
+            onClick={() => setIsReportModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-all cursor-pointer"
+          >
+            <Flag className="w-3.5 h-3.5" />
+            <span>Kötüye Kullanım Bildir</span>
+          </button>
+
+          {/* WhatsApp Share Button */}
+          <button
+            onClick={handleWhatsAppShare}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+          >
+            <Share2 className="w-4 h-4" />
+            <span>WhatsApp'ta Paylaş</span>
+          </button>
+        </div>
       </div>
+
 
       {/* 2-Column Responsive Widescreen Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -453,6 +479,17 @@ export default function PostDetailPage({
           fetchPostDetails(true);
         }}
       />
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        targetTitle={post.title}
+        targetType="post"
+        targetId={post.id}
+        onReportSubmit={handlePostReportSubmit}
+      />
     </div>
   );
 }
+

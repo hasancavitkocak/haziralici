@@ -60,6 +60,24 @@ export interface UserNotification {
   created_at: string;
 }
 
+export type ReportStatus = 'pending' | 'reviewed' | 'resolved' | 'dismissed';
+
+export interface ContentReport {
+  id: string;
+  reporter_id?: string | null;
+  reporter_email: string;
+  target_type: 'post' | 'offer';
+  target_id: string;
+  target_title: string;
+  reason: string;
+  details?: string | null;
+  status: ReportStatus;
+  admin_notes?: string | null;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+
 export interface CreatePostPayload {
   category: string;
   title: string;
